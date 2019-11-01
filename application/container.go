@@ -13,8 +13,7 @@ type container struct {
 	instances map[reflect.Type][]reflect.Value
 }
 
-// Param .
-type Param struct {
+type param struct {
 	Type    reflect.Type
 	IsSlice bool
 }
@@ -64,13 +63,13 @@ func (wa *WeegoApplication) Invoke(fn interface{}) interface{} {
 	return ret[0].Interface()
 }
 
-func getInParams(fnType reflect.Type) []Param {
+func getInParams(fnType reflect.Type) []param {
 	numIn := fnType.NumIn()
-	inParams := []Param{}
+	inParams := []param{}
 
 	for i := 0; i < numIn; i++ {
 		inParamType := fnType.In(i)
-		inParams = append(inParams, Param{
+		inParams = append(inParams, param{
 			inParamType,
 			inParamType.Kind() == reflect.Slice,
 		})
@@ -79,7 +78,7 @@ func getInParams(fnType reflect.Type) []Param {
 	return inParams
 }
 
-func getInArgs(c *container, inParams []Param) []reflect.Value {
+func getInArgs(c *container, inParams []param) []reflect.Value {
 	inArgs := []reflect.Value{}
 
 	for _, param := range inParams {

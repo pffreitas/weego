@@ -1,9 +1,5 @@
 package application
 
-import (
-	"fmt"
-)
-
 // WeegoApplication .
 type WeegoApplication struct {
 	container *container
@@ -25,5 +21,5 @@ func New(app interface{}) *WeegoApplication {
 
 // Run .
 func (wa *WeegoApplication) Run() {
-	fmt.Println(wa.container.instances)
+
 }
