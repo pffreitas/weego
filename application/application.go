@@ -2,8 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
-	"net/http"
 
 	"github.com/gorilla/mux"
 	whttp "github.com/pffreitas/weego/application/http"
@@ -12,7 +10,6 @@ import (
 // WeegoApplication .
 type WeegoApplication struct {
 	container *container
-	router    *mux.Router
 }
 
 // New .
@@ -24,18 +21,23 @@ func New(app interface{}) WeegoApplication {
 		container.injectConfig(config)
 	}
 
-	container.provide(whttp.NewRouter)
-
 	return container.invoke(newWeegoApplication).(WeegoApplication)
 }
 
-func newWeegoApplication(container *container, router *mux.Router) WeegoApplication {
-	return WeegoApplication{container, router}
+func newWeegoApplication(container *container) WeegoApplication {
+	return WeegoApplication{container}
 }
 
 // ServeHTTP .
 func (wa *WeegoApplication) ServeHTTP() {
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", "9004"), wa.router))
+	wa.container.provide(whttp.NewRouter)
+
+	wa.Invoke(func(router *mux.Router) int {
+		fmt.Printf("%+v \n", router)
+		//TODO config port
+		// log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", ""), router))
+		return 0
+	})
 }
 
 // Provide .

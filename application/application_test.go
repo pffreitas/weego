@@ -73,4 +73,6 @@ func TestA(t *testing.T) {
 		return 0
 	})
 
+	app.ServeHTTP()
+
 }

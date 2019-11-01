@@ -52,5 +52,5 @@ type EndpointDefinitions []EndpointDefinition
 
 // EndpointProvider .
 type EndpointProvider interface {
-	EndpointDefinitions() []EndpointDefinition
+	EndpointDefinitions() EndpointDefinitions
 }

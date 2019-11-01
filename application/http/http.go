@@ -11,11 +11,10 @@ import (
 
 // NewRouter ..
 func NewRouter(endpoints []EndpointProvider) *mux.Router {
-
 	router := mux.NewRouter().StrictSlash(true)
 
 	for _, e := range endpoints {
-		fmt.Printf("- Registering %v \n", reflect.TypeOf(e).Elem().Name())
+		fmt.Printf("- Registering %+v endpoints \n", reflect.TypeOf(e))
 
 		for _, ed := range e.EndpointDefinitions() {
 			fmt.Printf("\t %v \n", ed)
