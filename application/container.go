@@ -30,34 +30,31 @@ func newContainer() *container {
 	return container
 }
 
-// Provide .
-func (wa *WeegoApplication) Provide(constructor interface{}) {
-	container := wa.container
+func (c *container) provide(constructor interface{}) {
 
 	fnVal := reflect.ValueOf(constructor)
 	fnType := fnVal.Type()
 
 	inParams := getInParams(fnType)
-	inArgs := getInArgs(container, inParams)
+	inArgs := getInArgs(c, inParams)
 
 	producedType := fnType.Out(0)
-	container.providers[producedType] = provider{
+	c.providers[producedType] = provider{
 		producedType,
 	}
 
 	instance := fnVal.Call(inArgs)
-	container.instances[producedType] = instance
+	c.instances[producedType] = instance
 }
 
 // Invoke .
-func (wa *WeegoApplication) Invoke(fn interface{}) interface{} {
-	container := wa.container
+func (c *container) invoke(fn interface{}) interface{} {
 
 	fnVal := reflect.ValueOf(fn)
 	fnType := fnVal.Type()
 
 	inParams := getInParams(fnType)
-	inArgs := getInArgs(container, inParams)
+	inArgs := getInArgs(c, inParams)
 
 	ret := fnVal.Call(inArgs)
 	return ret[0].Interface()

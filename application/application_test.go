@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/pffreitas/weego/application"
+	whttp "github.com/pffreitas/weego/application/http"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,6 +31,21 @@ func (b B) DoIt() string {
 	return "DoIt from B + " + b.ARef.DoIt()
 }
 
+func (b B) EndpointDefinitions() whttp.EndpointDefinitions {
+	return whttp.EndpointDefinitions{
+		whttp.EndpointDefinition{
+			Name:    "B Endpooint",
+			Pattern: "/b",
+			Method:  "GET",
+			Handler: b.EndpointB,
+		},
+	}
+}
+
+func (b B) EndpointB() whttp.Response {
+	return whttp.Ok("")
+}
+
 func TestA(t *testing.T) {
 	assert := assert.New(t)
 
@@ -46,8 +62,6 @@ func TestA(t *testing.T) {
 	app.Provide(NewA)
 	app.Provide(NewB)
 
-	app.Run()
-
 	app.Invoke(func(config TestAppConfig) int {
 		assert.Equal("postgres://weezr:weezr@localhost:5432/weezr?sslmode=disable", config.DatabaseURL)
 		return 0
@@ -58,4 +72,5 @@ func TestA(t *testing.T) {
 		assert.Equal("DoIt from B + DoIt from A", b.DoIt())
 		return 0
 	})
+
 }
