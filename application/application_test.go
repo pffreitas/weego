@@ -5,6 +5,7 @@ import (
 
 	"github.com/pffreitas/weego/application"
 	whttp "github.com/pffreitas/weego/application/http"
+	"github.com/pffreitas/weego/application/runner"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -73,6 +74,5 @@ func TestA(t *testing.T) {
 		return 0
 	})
 
-	app.ServeHTTP()
-
+	runner.ServeHTTP(&app)
 }
