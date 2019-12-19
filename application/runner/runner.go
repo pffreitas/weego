@@ -8,12 +8,10 @@ import (
 	whttp "github.com/pffreitas/weego/application/http"
 )
 
-// Run .
 func Run(app application.WeegoApplication) {
 	fmt.Printf(">>> %+v\n", app)
 }
 
-// ServeHTTP .
 func ServeHTTP(app *application.WeegoApplication) {
 	app.Provide(whttp.NewRouter)
 

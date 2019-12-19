@@ -1,11 +1,9 @@
 package application
 
-// WeegoApplication .
 type WeegoApplication struct {
 	container *container
 }
 
-// New .
 func New(app interface{}) WeegoApplication {
 	container := newContainer()
 
@@ -21,12 +19,10 @@ func newWeegoApplication(container *container) WeegoApplication {
 	return WeegoApplication{container}
 }
 
-// Provide .
 func (wa *WeegoApplication) Provide(constructor interface{}) {
 	wa.container.provide(constructor)
 }
 
-// Invoke .
 func (wa *WeegoApplication) Invoke(fn interface{}) {
 	wa.container.invoke(fn)
 }

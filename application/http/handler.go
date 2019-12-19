@@ -5,23 +5,10 @@ import (
 	"reflect"
 )
 
-func getHandlerFuncParamTypes(handlerFunc interface{}) []reflect.Type {
-	handlerFuncType := reflect.TypeOf(handlerFunc)
-	numArgs := handlerFuncType.NumIn()
-
-	handlerFuncParamTypes := make([]reflect.Type, 0, numArgs)
-	for i := 0; i < numArgs; i++ {
-		p := handlerFuncType.In(i)
-		handlerFuncParamTypes = append(handlerFuncParamTypes, p)
-	}
-
-	return handlerFuncParamTypes
-}
-
 func createHandler(handlerFunc interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 
-		handlerFuncParamTypes := getHandlerFuncParamTypes(handlerFunc)
+		handlerFuncParamTypes := getHandlerFnParamTypes(handlerFunc)
 		handlerFuncArgs := make([]reflect.Value, 0, len(handlerFuncParamTypes))
 
 		if len(handlerFuncParamTypes) > 0 {
@@ -36,4 +23,17 @@ func createHandler(handlerFunc interface{}) http.HandlerFunc {
 
 		writeJSON(w, whttpResponse.Body, whttpResponse.Code)
 	}
+}
+
+func getHandlerFnParamTypes(handlerFunc interface{}) []reflect.Type {
+	handlerFuncType := reflect.TypeOf(handlerFunc)
+	numArgs := handlerFuncType.NumIn()
+
+	handlerFuncParamTypes := make([]reflect.Type, 0, numArgs)
+	for i := 0; i < numArgs; i++ {
+		p := handlerFuncType.In(i)
+		handlerFuncParamTypes = append(handlerFuncParamTypes, p)
+	}
+
+	return handlerFuncParamTypes
 }

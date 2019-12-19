@@ -9,6 +9,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// CorsHandler .
+func CorsHandler(w http.ResponseWriter, request *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type,*")
+	w.Header().Set("Access-Control-Allow-Methods", "*")
+
+	if "OPTIONS" == request.Method {
+		writeJSON(w, "", 200)
+		return
+	}
+}
+
 // NewRouter ..
 func NewRouter(endpoints []EndpointProvider) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)

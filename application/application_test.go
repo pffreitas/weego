@@ -16,26 +16,26 @@ func (a A) DoIt() string {
 	return "DoIt from A"
 }
 
-func NewA() A {
-	return A{}
-}
-
 type B struct {
 	ARef A
-}
-
-func NewB(a A) B {
-	return B{a}
 }
 
 func (b B) DoIt() string {
 	return "DoIt from B + " + b.ARef.DoIt()
 }
 
+type C struct {
+	A
+}
+
+func (c C) DoIt() string {
+	return "DoIt from C + " + c.A.DoIt()
+}
+
 func (b B) EndpointDefinitions() whttp.EndpointDefinitions {
 	return whttp.EndpointDefinitions{
 		whttp.EndpointDefinition{
-			Name:    "B Endpooint",
+			Name:    "B Endpoint",
 			Pattern: "/b",
 			Method:  "GET",
 			Handler: b.EndpointB,
@@ -60,8 +60,9 @@ func TestA(t *testing.T) {
 	}
 
 	app := application.New(TestApp{})
-	app.Provide(NewA)
-	app.Provide(NewB)
+	app.Provide(A{})
+	app.Provide(B{})
+	app.Provide(C{})
 
 	app.Invoke(func(config TestAppConfig) int {
 		assert.Equal("postgres://weezr:weezr@localhost:5432/weezr?sslmode=disable", config.DatabaseURL)
@@ -71,6 +72,11 @@ func TestA(t *testing.T) {
 	app.Invoke(func(a A, b B) int {
 		assert.Equal("DoIt from A", a.DoIt())
 		assert.Equal("DoIt from B + DoIt from A", b.DoIt())
+		return 0
+	})
+
+	app.Invoke(func(c C) int {
+		assert.Equal("DoIt from C + DoIt from A", c.DoIt())
 		return 0
 	})
 

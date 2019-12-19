@@ -35,34 +35,65 @@ func (c *container) provide(constructor interface{}) {
 	fnVal := reflect.ValueOf(constructor)
 	fnType := fnVal.Type()
 
-	inParams := getInParams(fnType)
-	inArgs := getInArgs(c, inParams)
+	var params []param
+	var args []reflect.Value
+	var producedType reflect.Type
+	var instance []reflect.Value
 
-	producedType := fnType.Out(0)
-	c.providers[producedType] = provider{
-		producedType,
+	if fnType.Kind() == reflect.Struct {
+		params = getParamsFromFields(fnType)
+		args = getArgs(c, params)
+		producedType = fnType
+		instance = instantiateStruct(fnType, args)
+	} else {
+		params = getParamsFromFuncIn(fnType)
+		args = getArgs(c, params)
+		producedType = fnType.Out(0)
+		instance = fnVal.Call(args)
 	}
 
-	instance := fnVal.Call(inArgs)
+	c.providers[producedType] = provider{producedType}
 	c.instances[producedType] = instance
 }
 
-// Invoke .
+func instantiateStruct(fnType reflect.Type, args []reflect.Value) []reflect.Value {
+	ptr := reflect.New(fnType).Elem()
+	for i := 0; i < ptr.NumField(); i++ {
+		field := ptr.Field(i)
+		field.Set(args[i])
+	}
+	return []reflect.Value{ptr}
+}
+
 func (c *container) invoke(fn interface{}) interface{} {
 
 	fnVal := reflect.ValueOf(fn)
 	fnType := fnVal.Type()
 
-	inParams := getInParams(fnType)
-	inArgs := getInArgs(c, inParams)
+	inParams := getParamsFromFuncIn(fnType)
+	inArgs := getArgs(c, inParams)
 
 	ret := fnVal.Call(inArgs)
 	return ret[0].Interface()
 }
 
-func getInParams(fnType reflect.Type) []param {
+func getParamsFromFields(fnType reflect.Type) []param {
+	var inParams []param
+
+	for i := 0; i < fnType.NumField(); i++ {
+		inParamType := fnType.Field(i).Type
+		inParams = append(inParams, param{
+			inParamType,
+			inParamType.Kind() == reflect.Slice,
+		})
+	}
+
+	return inParams
+}
+
+func getParamsFromFuncIn(fnType reflect.Type) []param {
 	numIn := fnType.NumIn()
-	inParams := []param{}
+	var inParams []param
 
 	for i := 0; i < numIn; i++ {
 		inParamType := fnType.In(i)
@@ -75,8 +106,8 @@ func getInParams(fnType reflect.Type) []param {
 	return inParams
 }
 
-func getInArgs(c *container, inParams []param) []reflect.Value {
-	inArgs := []reflect.Value{}
+func getArgs(c *container, inParams []param) []reflect.Value {
+	var inArgs []reflect.Value
 
 	for _, param := range inParams {
 		if param.IsSlice {
