@@ -34,7 +34,7 @@ func (c C) DoIt() string {
 
 func (b B) EndpointDefinitions() whttp.EndpointDefinitions {
 	return whttp.EndpointDefinitions{
-		whttp.EndpointDefinition{
+		{
 			Name:    "B Endpoint",
 			Pattern: "/b",
 			Method:  "GET",
@@ -48,15 +48,19 @@ func (b B) EndpointB() whttp.Response {
 }
 
 func TestA(t *testing.T) {
-	assert := assert.New(t)
+	assertions := assert.New(t)
 
 	type TestAppConfig struct {
-		ConfigA     string
+		ConfigA string `envconfig:"CONFIG_A"`
+	}
+
+	type DatabaseConfig struct {
 		DatabaseURL string `envconfig:"DATABASE_URL"`
 	}
 
 	type TestApp struct {
-		Config TestAppConfig
+		Config   TestAppConfig
+		DbConfig DatabaseConfig
 	}
 
 	app := application.New(TestApp{})
@@ -64,21 +68,22 @@ func TestA(t *testing.T) {
 	app.Provide(B{})
 	app.Provide(C{})
 
-	app.Invoke(func(config TestAppConfig) int {
-		assert.Equal("postgres://weezr:weezr@localhost:5432/weezr?sslmode=disable", config.DatabaseURL)
+	app.Invoke(func(config TestAppConfig, dbConfig DatabaseConfig) int {
+		assertions.Equal("AAA", config.ConfigA)
+		assertions.Equal("postgres://weezr:weezr@localhost:5432/weezr?sslmode=disable", dbConfig.DatabaseURL)
 		return 0
 	})
 
 	app.Invoke(func(a A, b B) int {
-		assert.Equal("DoIt from A", a.DoIt())
-		assert.Equal("DoIt from B + DoIt from A", b.DoIt())
+		assertions.Equal("DoIt from A", a.DoIt())
+		assertions.Equal("DoIt from B + DoIt from A", b.DoIt())
 		return 0
 	})
 
 	app.Invoke(func(c C) int {
-		assert.Equal("DoIt from C + DoIt from A", c.DoIt())
+		assertions.Equal("DoIt from C + DoIt from A", c.DoIt())
 		return 0
 	})
 
-	runner.ServeHTTP(&app)
+	runner.Run(&app)
 }

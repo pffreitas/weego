@@ -1,8 +1,8 @@
 package application
 
 import (
-	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -13,16 +13,21 @@ type weegoConfig struct {
 	configValue reflect.Value
 }
 
-func getConfigType(app interface{}) (reflect.Type, error) {
+func getConfigType(app interface{}) ([]reflect.Type, error) {
+	var configTypes []reflect.Type
+
 	appVal := reflect.ValueOf(app)
 	appType := appVal.Type()
 
-	configField, ok := appType.FieldByName("Config")
-	if !ok {
-		return nil, fmt.Errorf("")
+	for i := 0; i < appType.NumField(); i++ {
+		field := appType.Field(i)
+
+		if strings.HasSuffix(field.Name, "Config") {
+			configTypes = append(configTypes, field.Type)
+		}
 	}
 
-	return configField.Type, nil
+	return configTypes, nil
 }
 
 func newConfigInstance(configType reflect.Type) reflect.Value {
@@ -30,17 +35,24 @@ func newConfigInstance(configType reflect.Type) reflect.Value {
 	return configInstance
 }
 
-func processConfig(app interface{}) (weegoConfig, error) {
-	godotenv.Load("../.env.test", "../.env")
+func processConfig(app interface{}) ([]weegoConfig, error) {
+	var configObjects []weegoConfig
 
-	configType, err := getConfigType(app)
+	err := godotenv.Load("../.env.test", "../.env")
 	if err != nil {
-		return weegoConfig{nil, reflect.Value{}}, err
+		return configObjects, err
 	}
 
-	configInstance := newConfigInstance(configType)
+	configTypes, err := getConfigType(app)
+	if err != nil {
+		return configObjects, err
+	}
 
-	err = envconfig.Process("", configInstance.Addr().Interface())
+	for _, configType := range configTypes {
+		configInstance := newConfigInstance(configType)
+		err = envconfig.Process("", configInstance.Addr().Interface())
+		configObjects = append(configObjects, weegoConfig{configType, configInstance})
+	}
 
-	return weegoConfig{configType, configInstance}, err
+	return configObjects, err
 }

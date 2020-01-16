@@ -1,22 +1,32 @@
 package application
 
+import "reflect"
+
 type WeegoApplication struct {
+	Name      string
 	container *container
 }
 
 func New(app interface{}) WeegoApplication {
 	container := newContainer()
 
-	config, err := processConfig(app)
+	configObjects, err := processConfig(app)
 	if err == nil {
-		container.injectConfig(config)
+		for _, configObject := range configObjects {
+			container.injectConfig(configObject)
+		}
 	}
 
-	return container.invoke(newWeegoApplication).(WeegoApplication)
+	weegoApplication := container.invoke(newWeegoApplication).(WeegoApplication)
+
+	appVal := reflect.ValueOf(app)
+	weegoApplication.Name = appVal.Type().Name()
+
+	return weegoApplication
 }
 
 func newWeegoApplication(container *container) WeegoApplication {
-	return WeegoApplication{container}
+	return WeegoApplication{"", container}
 }
 
 func (wa *WeegoApplication) Provide(constructor interface{}) {
