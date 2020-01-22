@@ -38,10 +38,7 @@ func newConfigInstance(configType reflect.Type) reflect.Value {
 func processConfig(app interface{}) ([]weegoConfig, error) {
 	var configObjects []weegoConfig
 
-	err := godotenv.Load("../.env.test", "../.env")
-	if err != nil {
-		return configObjects, err
-	}
+	_ = godotenv.Load("../.env.test", "../.env")
 
 	configTypes, err := getConfigType(app)
 	if err != nil {
