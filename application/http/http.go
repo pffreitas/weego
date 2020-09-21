@@ -5,11 +5,23 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/robbert229/jwt"
 
 	"github.com/gorilla/mux"
 )
 
-func CorsHandler(w http.ResponseWriter, request *http.Request) {
+type Middleware interface {
+	Handle(w http.ResponseWriter, request *http.Request) bool
+}
+
+type CorsMiddleware struct {
+}
+
+func (m CorsMiddleware) Handle(w http.ResponseWriter, request *http.Request) bool {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type,*")
@@ -17,11 +29,49 @@ func CorsHandler(w http.ResponseWriter, request *http.Request) {
 
 	if "OPTIONS" == request.Method {
 		writeJSON(w, "", 200)
-		return
+		return false
 	}
+
+	return true
 }
 
-func NewRouter(endpoints []EndpointProvider) *mux.Router {
+type AuthMiddleware struct {
+}
+
+func (m AuthMiddleware) Handle(w http.ResponseWriter, request *http.Request) bool {
+	authorizationHeader := request.Header["Authorization"]
+
+	logrus.WithField("authorization", authorizationHeader).Info("authorizing")
+
+	if len(authorizationHeader) == 1 {
+		authToken := authorizationHeader[0]
+
+		if strings.HasPrefix(authToken, "Bearer ") {
+			jwtToken := strings.Replace(authToken, "Bearer ", "", 1)
+
+			hs256 := jwt.HmacSha256("config.JWTSecret")
+
+			if hs256.Validate(jwtToken) != nil {
+				logrus.Errorf("Invalid JWT token %s", jwtToken)
+				writeJSON(w, "Unauthorized", 401)
+				return false
+			}
+
+			if claims, err := hs256.Decode(jwtToken); err == nil {
+				if sub, err := claims.Get("sub"); err == nil {
+					w.Header().Set("Username", fmt.Sprintf("%v", sub))
+					return true
+				}
+			}
+		}
+	}
+
+	writeJSON(w, "Unauthorized", 401)
+	logrus.Errorf("Failed to process authorization: %v", authorizationHeader)
+	return false
+}
+
+func NewRouter(endpoints []EndpointProvider, middlewareFns []Middleware) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	for _, e := range endpoints {
@@ -34,7 +84,7 @@ func NewRouter(endpoints []EndpointProvider) *mux.Router {
 				Methods(ed.Method).
 				Path(ed.Pattern).
 				Name(ed.Name).
-				Handler(createHandler(ed.Handler))
+				Handler(createHandler(middlewareFns, ed.Handler))
 		}
 	}
 

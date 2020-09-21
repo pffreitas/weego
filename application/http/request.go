@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 )
@@ -20,7 +23,7 @@ func bindBody(payload reflect.Value, r *http.Request) {
 
 		err := decoder.Decode(body)
 		if err != nil {
-			//TODO handler err
+			logrus.WithError(err).Error("failed to decode body payload")
 		}
 
 		bodyField.Set(reflect.ValueOf(body).Elem())
@@ -40,6 +43,22 @@ func parseRequestParams(r *http.Request) map[string]string {
 	return params
 }
 
+var (
+	converters = map[string]interface{}{
+		"int64": int64Converter,
+	}
+)
+
+func int64Converter(param string) (int64, error) {
+	val, err := strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		logrus.WithError(err).Errorf("failed to parse to int64: ", param)
+		return 0, err
+	}
+
+	return val, err
+}
+
 func bindParams(payload reflect.Value, params map[string]string) {
 	paramsField := payload.FieldByName("Params")
 
@@ -48,8 +67,17 @@ func bindParams(payload reflect.Value, params map[string]string) {
 
 		for k, v := range params {
 			f := paramsStruct.FieldByName(strings.Title(k))
+
 			if f.IsValid() {
-				f.Set(reflect.ValueOf(v))
+				converter := converters[f.Type().Name()]
+				if converter != nil {
+					out := reflect.ValueOf(converter).Call([]reflect.Value{reflect.ValueOf(v)})
+					if out[1].IsNil() {
+						f.Set(out[0])
+					}
+				} else {
+					f.Set(reflect.ValueOf(v))
+				}
 			}
 		}
 

@@ -1,7 +1,12 @@
 package application_test
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/pffreitas/weego/application/test"
+
+	"github.com/gorilla/mux"
 
 	"github.com/pffreitas/weego/application"
 	whttp "github.com/pffreitas/weego/application/http"
@@ -14,6 +19,35 @@ type A struct {
 
 func (a A) DoIt() string {
 	return "DoIt from A"
+}
+
+func (a A) EndpointDefinitions() whttp.EndpointDefinitions {
+	return whttp.EndpointDefinitions{
+		{
+			Name:    "Save",
+			Pattern: "/foo",
+			Method:  "POST",
+			Handler: a.save,
+		},
+	}
+}
+
+type SavePayload struct {
+	Params struct {
+		Limit    int64
+		Offset   int64
+		Foo      string
+		Username string
+	}
+	Body struct {
+		ParamA float64
+		ParamB string
+		ParamC int64
+	}
+}
+
+func (a A) save(payload SavePayload) whttp.Response {
+	return whttp.Ok(payload)
 }
 
 type B struct {
@@ -86,4 +120,32 @@ func TestA(t *testing.T) {
 	})
 
 	runner.Run(&app)
+}
+
+func TestB(t *testing.T) {
+
+	type TestApp struct {
+	}
+
+	app := application.New(TestApp{})
+	app.Use(whttp.AuthMiddleware{}, whttp.CorsMiddleware{})
+	app.Provide(A{})
+
+	runner.ServeHTTP(&app)
+
+	s := map[string]interface{}{
+		"ParamA": 2.2,
+		"ParamB": "B",
+		"ParamC": int64(1),
+	}
+
+	app.Invoke(func(router *mux.Router) int {
+		response := test.Exec(router, test.Post("/foo?Limit=10&offset=20&foo=bar", s))
+
+		fmt.Printf("\n >> %d \n", response.Code)
+		fmt.Printf("\n >> %s \n", response.Body.String())
+
+		return 0
+	})
+
 }

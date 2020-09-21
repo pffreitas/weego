@@ -5,8 +5,13 @@ import (
 	"reflect"
 )
 
-func createHandler(handlerFunc interface{}) http.HandlerFunc {
+func createHandler(middlewareFns []Middleware, handlerFunc interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
+		for _, mFn := range middlewareFns {
+			if !mFn.Handle(w, request) {
+				return
+			}
+		}
 
 		handlerFuncParamTypes := getHandlerFnParamTypes(handlerFunc)
 		handlerFuncArgs := make([]reflect.Value, 0, len(handlerFuncParamTypes))

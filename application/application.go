@@ -1,6 +1,10 @@
 package application
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/pffreitas/weego/application/http"
+)
 
 type WeegoApplication struct {
 	Name      string
@@ -35,4 +39,10 @@ func (wa *WeegoApplication) Provide(constructor interface{}) {
 
 func (wa *WeegoApplication) Invoke(fn interface{}) {
 	wa.container.invoke(fn)
+}
+
+func (wa *WeegoApplication) Use(middlewareFns ...http.Middleware) {
+	for _, fn := range middlewareFns {
+		wa.container.provide(fn)
+	}
 }

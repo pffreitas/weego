@@ -52,7 +52,7 @@ func (c *container) provide(constructor interface{}) {
 		instance = fnVal.Call(args)
 	}
 
-	c.providers[producedType] = provider{producedType}
+	//c.providers[producedType] = provider{producedType}
 	c.instances[producedType] = instance
 }
 
@@ -113,10 +113,13 @@ func getArgs(c *container, inParams []param) []reflect.Value {
 		if param.IsSlice {
 			ins := reflect.MakeSlice(param.Type, 0, 0)
 			for k, v := range c.instances {
-				if k.Implements(param.Type.Elem()) {
+				if k == param.Type.Elem() {
+					ins = reflect.Append(ins, v[0])
+				} else if param.Type.Elem().Kind() == reflect.Interface && k.Implements(param.Type.Elem()) {
 					ins = reflect.Append(ins, v[0])
 				}
 			}
+
 			inArgs = append(inArgs, ins)
 		} else {
 			inArgs = append(inArgs, c.instances[param.Type][0])
